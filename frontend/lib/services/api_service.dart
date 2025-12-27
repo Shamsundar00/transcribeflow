@@ -39,6 +39,15 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> getProgress() async {
+    try {
+      final response = await _dio.get('/progress');
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      throw Exception('Failed to get progress: $e');
+    }
+  }
+
   Stream<dynamic> connectWebSocket() {
     // 1. Clean and Parse Base URL
     var cleanUrl = _baseUrl.trim();

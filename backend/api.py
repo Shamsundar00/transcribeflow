@@ -51,19 +51,32 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
+# Global progress store for polling fallback
+progress_logs = []
+result_data = None
+is_processing = False
+
 # Data Models
 class ProcessingRequest(BaseModel):
     links: List[str]
     api_key: Optional[str] = None
 
-# Core Logic Implementation with WS Feedback
+# Core Logic Implementation with WS Feedback AND Polling Store
 async def process_links_background(links: List[str], api_key: str = None):
-    # Initialize Core (Pass API key if needed dynamic, but core uses env for now or mock)
+    global progress_logs, result_data, is_processing
+    
+    # Reset state
+    progress_logs = []
+    result_data = None
+    is_processing = True
+    
+    # Initialize Core
     core = TranscribeCore(api_key=api_key)
     
-    # Progress Callback
+    # Progress Callback - broadcasts AND stores for polling
     async def log_callback(message: str, level: str = "info"):
         payload = {"type": "log", "message": message, "level": level}
+        progress_logs.append(payload)
         await manager.broadcast(payload)
 
     await log_callback("Initiating TranscribeFlow Sequence...", "info")
@@ -71,15 +84,17 @@ async def process_links_background(links: List[str], api_key: str = None):
     for link in links:
         try:
             result = await core.process_link(link, progress_callback=log_callback)
-            # Send success result
+            # Store and broadcast result
+            result_data = result
             await manager.broadcast({
                 "type": "result",
                 "data": result
             })
         except Exception as e:
-            await log_callback(f"Failed to process {link}", "error")
+            await log_callback(f"Failed to process {link}: {str(e)}", "error")
 
     await log_callback("All tasks completed.", "success")
+    is_processing = False
 
 # Health check endpoint
 @app.get("/")
@@ -89,6 +104,15 @@ async def health_check():
 @app.get("/health")
 async def health():
     return {"status": "healthy", "connections": len(manager.active_connections)}
+
+@app.get("/progress")
+async def get_progress():
+    """Polling endpoint for progress updates (fallback for WebSocket)"""
+    return {
+        "is_processing": is_processing,
+        "logs": progress_logs,
+        "result": result_data
+    }
 
 # Endpoints
 @app.post("/start_processing")

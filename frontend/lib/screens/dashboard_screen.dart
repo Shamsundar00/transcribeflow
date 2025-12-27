@@ -110,17 +110,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     });
 
     try {
-      // FORCE RECONNECT WebSocket to ensure we get updates
-      ref.read(logsProvider.notifier).addLog({
-        'message': 'Establishing real-time connection...',
-        'level': 'info',
-      });
-      ref.read(apiServiceProvider).disconnect();
-      _connectWebSocket();
-
-      // Give it a moment to connect
-      await Future.delayed(const Duration(seconds: 1));
-
       // Step 4: Make API call
       ref.read(logsProvider.notifier).addLog({
         'message': 'Sending request with link: $link',
@@ -132,13 +121,46 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       ], apiKey.isNotEmpty ? apiKey : null);
 
       ref.read(logsProvider.notifier).addLog({
-        'message': 'Request sent successfully! Waiting for server response...',
+        'message': 'Request sent! Polling for updates...',
         'level': 'success',
       });
 
+      // POLLING LOOP: Fetch progress every 2 seconds
+      int lastLogCount = 0;
+      bool isStillProcessing = true;
+
+      while (isStillProcessing && mounted) {
+        await Future.delayed(const Duration(seconds: 2));
+
+        try {
+          final progress = await ref.read(apiServiceProvider).getProgress();
+
+          // Add new logs
+          final logs = progress['logs'] as List<dynamic>? ?? [];
+          for (int i = lastLogCount; i < logs.length; i++) {
+            final log = logs[i] as Map<String, dynamic>;
+            ref.read(logsProvider.notifier).addLog(log);
+          }
+          lastLogCount = logs.length;
+
+          // Check for result
+          if (progress['result'] != null) {
+            ref.read(resultsProvider.notifier).setResult(progress['result']);
+          }
+
+          // Check if still processing
+          isStillProcessing = progress['is_processing'] as bool? ?? false;
+        } catch (pollError) {
+          ref.read(logsProvider.notifier).addLog({
+            'message': 'Polling error: $pollError',
+            'level': 'warning',
+          });
+        }
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Processing started! Watch the terminal for updates.'),
+          content: Text('Processing complete!'),
           backgroundColor: Colors.green,
         ),
       );
