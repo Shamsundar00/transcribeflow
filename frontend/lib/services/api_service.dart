@@ -40,17 +40,45 @@ class ApiService {
   }
 
   Stream<dynamic> connectWebSocket() {
-    // Convert http/https to ws/wss
-    final uri = Uri.parse(_baseUrl);
-    final wsScheme = uri.scheme == 'https' ? 'wss' : 'ws';
+    // 1. Clean and Parse Base URL
+    var cleanUrl = _baseUrl.trim();
+    if (cleanUrl.endsWith('/')) {
+      cleanUrl = cleanUrl.substring(0, cleanUrl.length - 1);
+    }
 
-    // For https URLs (like Render), don't include port (it's implicit 443)
-    // For http URLs (local dev), include the port
+    // Ensure scheme exists
+    if (!cleanUrl.startsWith('http')) {
+      cleanUrl = 'https://$cleanUrl';
+    }
+
+    final uri = Uri.parse(cleanUrl);
+
+    // 2. Determine WebSocket Scheme
+    // Force WSS for Render or HTTPS
+    String wsScheme = 'ws';
+    if (uri.scheme == 'https' || cleanUrl.contains('onrender.com')) {
+      wsScheme = 'wss';
+    }
+
+    // 3. Construct WS URL
+    // If it's Render or standard HTTPS ports, avoid explicit port
     String wsUrl;
-    if (uri.scheme == 'https') {
-      wsUrl = '$wsScheme://${uri.host}/ws';
+    final port = uri.port;
+
+    if (wsScheme == 'wss') {
+      // For WSS, only include port if it's NOT 443 and NOT 0
+      if (port != 443 && port != 0) {
+        wsUrl = '$wsScheme://${uri.host}:$port/ws';
+      } else {
+        wsUrl = '$wsScheme://${uri.host}/ws';
+      }
     } else {
-      wsUrl = '$wsScheme://${uri.host}:${uri.port}/ws';
+      // For WS (local), include port if it's NOT 80 and NOT 0
+      if (port != 80 && port != 0) {
+        wsUrl = '$wsScheme://${uri.host}:$port/ws';
+      } else {
+        wsUrl = '$wsScheme://${uri.host}/ws';
+      }
     }
 
     print("Connecting to WebSocket: $wsUrl");
