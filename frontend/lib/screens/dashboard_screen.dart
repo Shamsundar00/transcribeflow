@@ -20,6 +20,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   final TextEditingController _linkController = TextEditingController();
   final TextEditingController _apiKeyController = TextEditingController();
   int _navIndex = 0;
+  bool _obscureApiKey = true;
 
   @override
   void initState() {
@@ -147,7 +148,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget _buildInputSection() {
     return GlassmorphicContainer(
       width: double.infinity,
-      height: 180,
+      height: 240,
       borderRadius: 16,
       blur: 15,
       alignment: Alignment.center,
@@ -163,47 +164,59 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
+            // URL Input
             TextField(
               controller: _linkController,
               style: const TextStyle(color: Colors.white),
               decoration: const InputDecoration(
                 labelText: 'Target URL',
-                hintText: 'https://...',
+                hintText: 'https://www.instagram.com/reel/...',
                 prefixIcon: Icon(Icons.link, color: Color(0xFF00C6FB)),
               ),
             ),
+            const SizedBox(height: 12),
+            // API Key Input with visibility toggle
+            TextField(
+              controller: _apiKeyController,
+              obscureText: _obscureApiKey,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: 'Gemini API Key (Optional)',
+                hintText: 'AIzaSy...',
+                prefixIcon: const Icon(Icons.vpn_key, color: Color(0xFFFF00CC)),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscureApiKey ? Icons.visibility_off : Icons.visibility,
+                    color: Colors.white54,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscureApiKey = !_obscureApiKey;
+                    });
+                  },
+                ),
+              ),
+            ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _apiKeyController,
-                    obscureText: true,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: const InputDecoration(
-                      labelText: 'API Key (Optional)',
-                      prefixIcon: Icon(Icons.vpn_key, color: Color(0xFFFF00CC)),
-                    ),
+            // Button Row
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _processLink,
+                icon: const Icon(Icons.play_arrow),
+                label: const Text("INITIATE SEQUENCE"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00C6FB),
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 16,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                const SizedBox(width: 16),
-                ElevatedButton.icon(
-                  onPressed: _processLink,
-                  icon: const Icon(Icons.play_arrow),
-                  label: const Text("INITIATE SEQUENCE"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00C6FB),
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 20,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ],
         ),
