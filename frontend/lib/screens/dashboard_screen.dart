@@ -39,19 +39,35 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   void _connectWebSocket() {
     // Listen to WebSocket
-    ref.read(apiServiceProvider).connectWebSocket().listen((message) {
-      if (message == null) return;
-      try {
-        final data = jsonDecode(message);
-        if (data['type'] == 'log') {
-          ref.read(logsProvider.notifier).addLog(data);
-        } else if (data['type'] == 'result') {
-          ref.read(resultsProvider.notifier).setResult(data['data']);
-        }
-      } catch (e) {
-        print("WS Error: $e");
-      }
-    });
+    ref
+        .read(apiServiceProvider)
+        .connectWebSocket()
+        .listen(
+          (message) {
+            if (message == null) return;
+            try {
+              final data = jsonDecode(message);
+              if (data['type'] == 'log') {
+                ref.read(logsProvider.notifier).addLog(data);
+              } else if (data['type'] == 'result') {
+                ref.read(resultsProvider.notifier).setResult(data['data']);
+              }
+            } catch (e) {
+              print("WS Error: $e");
+            }
+          },
+          onError: (error) {
+            ref.read(logsProvider.notifier).addLog({
+              'message': 'Real-time connection error: $error',
+              'level': 'error',
+            });
+          },
+          onDone: () {
+            // Only log if we were expecting it to stay open?
+            // For now just log it so we know.
+            print("WS Closed");
+          },
+        );
   }
 
   bool _isProcessing = false;
@@ -94,6 +110,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     });
 
     try {
+      // FORCE RECONNECT WebSocket to ensure we get updates
+      ref.read(logsProvider.notifier).addLog({
+        'message': 'Establishing real-time connection...',
+        'level': 'info',
+      });
+      ref.read(apiServiceProvider).disconnect();
+      _connectWebSocket();
+
+      // Give it a moment to connect
+      await Future.delayed(const Duration(seconds: 1));
+
       // Step 4: Make API call
       ref.read(logsProvider.notifier).addLog({
         'message': 'Sending request with link: $link',
