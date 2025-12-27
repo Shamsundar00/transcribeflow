@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+instaloader
+google-generativeai
+firebase-admin
+fpdf
+python-docx
+pandas
+python-dotenv
+python-multipart
+wtforms
+yt-dlp
