@@ -43,7 +43,15 @@ class ApiService {
     // Convert http/https to ws/wss
     final uri = Uri.parse(_baseUrl);
     final wsScheme = uri.scheme == 'https' ? 'wss' : 'ws';
-    final wsUrl = '$wsScheme://${uri.host}:${uri.port}/ws';
+
+    // For https URLs (like Render), don't include port (it's implicit 443)
+    // For http URLs (local dev), include the port
+    String wsUrl;
+    if (uri.scheme == 'https') {
+      wsUrl = '$wsScheme://${uri.host}/ws';
+    } else {
+      wsUrl = '$wsScheme://${uri.host}:${uri.port}/ws';
+    }
 
     print("Connecting to WebSocket: $wsUrl");
     final wsUri = Uri.parse(wsUrl);

@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers.dart';
 import '../services/api_service.dart';
+import '../services/version_manager.dart';
 import '../widgets/cyber_terminal.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -26,6 +27,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   void initState() {
     super.initState();
     _connectWebSocket();
+    _checkForUpdates();
+  }
+
+  Future<void> _checkForUpdates() async {
+    final updateInfo = await VersionManager.checkForUpdate();
+    if (updateInfo != null && updateInfo['hasUpdate'] == true && mounted) {
+      VersionManager.showUpdateDialog(context, updateInfo);
+    }
   }
 
   void _connectWebSocket() {
