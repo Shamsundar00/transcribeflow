@@ -81,11 +81,27 @@ async def process_links_background(links: List[str], api_key: str = None):
 
     await log_callback("All tasks completed.", "success")
 
+# Health check endpoint
+@app.get("/")
+async def health_check():
+    return {"status": "ok", "message": "TranscribeFlow Backend is running!"}
+
+@app.get("/health")
+async def health():
+    return {"status": "healthy", "connections": len(manager.active_connections)}
+
 # Endpoints
 @app.post("/start_processing")
 async def start_processing(request: ProcessingRequest, background_tasks: BackgroundTasks):
     if not request.links:
         raise HTTPException(status_code=400, detail="No links provided")
+    
+    # Send immediate feedback to connected clients
+    await manager.broadcast({
+        "type": "log",
+        "message": f"Server received request for {len(request.links)} link(s)",
+        "level": "info"
+    })
     
     background_tasks.add_task(process_links_background, request.links, request.api_key)
     return {"status": "started", "message": "Processing started in background"}
