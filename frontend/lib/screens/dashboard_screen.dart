@@ -106,7 +106,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
-                child: _navIndex == 2 ? _buildSettings() : _buildDashboard(),
+                child: _navIndex == 2
+                    ? _buildSettings()
+                    : _navIndex == 1
+                    ? _buildArchives()
+                    : _buildDashboard(),
               ),
             ),
           ),
@@ -336,6 +340,50 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 );
               }
             },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildArchives() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "ARCHIVES",
+          style: GoogleFonts.outfit(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFF00C6FB),
+            letterSpacing: 1.5,
+          ),
+        ),
+        const SizedBox(height: 32),
+        Expanded(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.archive_outlined, size: 80, color: Colors.white24),
+                const SizedBox(height: 16),
+                Text(
+                  "No transcriptions saved yet.",
+                  style: GoogleFonts.outfit(
+                    color: Colors.white54,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "Your completed transcriptions will appear here.",
+                  style: GoogleFonts.outfit(
+                    color: Colors.white30,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],
