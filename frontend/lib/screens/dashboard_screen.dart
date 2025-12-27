@@ -54,22 +54,84 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     });
   }
 
+  bool _isProcessing = false;
+
   void _processLink() async {
     final link = _linkController.text.trim();
     final apiKey = _apiKeyController.text.trim();
 
-    if (link.isEmpty) return;
+    // Step 1: Validate input
+    if (link.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter an Instagram URL first!'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
 
+    // Step 2: Check if server URL is configured
+    final serverUrl = ref.read(apiServiceProvider).baseUrl;
+    if (serverUrl.contains('10.0.2.2') || serverUrl.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Go to Settings and enter your Render server URL first!',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Step 3: Show processing state
+    setState(() => _isProcessing = true);
     ref.read(logsProvider.notifier).clear();
+    ref.read(logsProvider.notifier).addLog({
+      'message': 'Connecting to server: $serverUrl',
+      'level': 'info',
+    });
+
     try {
+      // Step 4: Make API call
+      ref.read(logsProvider.notifier).addLog({
+        'message': 'Sending request with link: $link',
+        'level': 'info',
+      });
+
       await ref.read(apiServiceProvider).startProcessing([
         link,
       ], apiKey.isNotEmpty ? apiKey : null);
-    } catch (e) {
+
       ref.read(logsProvider.notifier).addLog({
-        'message': 'Error starting process: $e',
+        'message': 'Request sent successfully! Waiting for server response...',
+        'level': 'success',
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Processing started! Watch the terminal for updates.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      // Step 5: Show detailed error
+      final errorMsg = e.toString();
+      ref.read(logsProvider.notifier).addLog({
+        'message': 'ERROR: $errorMsg',
         'level': 'error',
       });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed: $errorMsg'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    } finally {
+      setState(() => _isProcessing = false);
     }
   }
 
@@ -211,11 +273,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: _processLink,
-                icon: const Icon(Icons.play_arrow),
-                label: const Text("INITIATE SEQUENCE"),
+                onPressed: _isProcessing ? null : _processLink,
+                icon: _isProcessing
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.black,
+                        ),
+                      )
+                    : const Icon(Icons.play_arrow),
+                label: Text(
+                  _isProcessing ? "PROCESSING..." : "INITIATE SEQUENCE",
+                ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00C6FB),
+                  backgroundColor: _isProcessing
+                      ? const Color(0xFF00C6FB).withOpacity(0.5)
+                      : const Color(0xFF00C6FB),
                   foregroundColor: Colors.black,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
