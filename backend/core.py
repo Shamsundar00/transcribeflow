@@ -115,6 +115,7 @@ class TranscribeCore:
                 'quiet': True,
                 'no_warnings': True,
                 'extract_flat': False,
+                'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
             }
             
             loop = asyncio.get_event_loop()
@@ -165,13 +166,11 @@ class TranscribeCore:
 
         # Verified models from check_models.py
         models_to_try = [
-            "gemini-2.5-flash-lite",
             "gemini-2.5-flash",
-            "gemini-flash-latest",
-            "gemini-flash-lite-latest",
-            "gemini-2.0-flash-lite",
+            "gemini-2.5-pro",
             "gemini-2.0-flash",
-            "gemini-2.0-flash-exp"
+            "gemini-2.0-flash-exp",
+            "gemini-flash-latest",
         ]
 
         uploaded_file = None
@@ -217,6 +216,8 @@ Instructions:
                 except Exception as e:
                     error_msg = str(e)
                     logger.warning(f"{model_name} failed: {error_msg}")
+                    if progress_callback:
+                        await progress_callback(f"{model_name} failed: {error_msg}", "warning")
                     last_error = error_msg
                     # If it's a legitimate rate limit (429), we might want to wait, 
                     # but for "brute force" we just move to the next model which might have quota.

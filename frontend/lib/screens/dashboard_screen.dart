@@ -628,6 +628,96 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
           ),
         ),
+        const SizedBox(height: 24),
+        GlassmorphicContainer(
+          width: double.infinity,
+          height: 180,
+          borderRadius: 16,
+          blur: 15,
+          alignment: Alignment.center,
+          border: 2,
+          linearGradient: LinearGradient(
+            colors: [
+              Colors.white.withOpacity(0.1),
+              Colors.white.withOpacity(0.05),
+            ],
+          ),
+          borderGradient: LinearGradient(
+            colors: [
+              const Color(0xFF00C6FB).withOpacity(0.5),
+              Colors.transparent,
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "VERSION CONTROL",
+                      style: GoogleFonts.jetBrainsMono(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "v${VersionManager.currentVersion}",
+                      style: GoogleFonts.outfit(
+                        fontSize: 24,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      "Channel: Stable",
+                      style: TextStyle(color: Colors.white30, fontSize: 12),
+                    ),
+                  ],
+                ),
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Checking for updates...')),
+                    );
+                    final updateInfo = await VersionManager.checkForUpdate();
+                    if (context.mounted) {
+                      if (updateInfo != null &&
+                          updateInfo['hasUpdate'] == true) {
+                        VersionManager.showUpdateDialog(context, updateInfo);
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'You are on the latest version!',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.system_update),
+                  label: const Text("CHECK FOR UPDATES"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white.withOpacity(0.1),
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Color(0xFF00C6FB)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 16,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
